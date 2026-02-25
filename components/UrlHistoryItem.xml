@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="UrlHistoryItem" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.bg    = m.top.findNode("itemBg")
+            m.label = m.top.findNode("itemLabel")
+        end sub
+
+        sub onItemContentChange()
+            content = m.top.itemContent
+            if type(content) = "roInvalid" then return
+            m.label.text = content.title
+        end sub
+
+        sub onFocusChange()
+            if m.top.focusPercent > 0.5
+                m.bg.color    = "0x1A1A50FF"
+                m.label.color = "0x00FFFFFF"
+            else
+                m.bg.color    = "0x0D0D28FF"
+                m.label.color = "0x8080C0FF"
+            end if
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="itemContent"  type="node"  onChange="onItemContentChange" />
+        <field id="focusPercent" type="float" onChange="onFocusChange" />
+    </interface>
+
+    <children>
+        <Rectangle id="itemBg"
+            width="1048" height="36"
+            color="0x0D0D28FF" />
+        <Rectangle translation="[0,0]" width="3" height="36" color="0xFF00FFFF" opacity="0.5" />
+        <Label id="itemLabel"
+            translation="[12, 8]"
+            width="1024" height="22"
+            text=""
+            color="0x8080C0FF"
+            truncateOnDelimiter="..." />
+    </children>
+</component>

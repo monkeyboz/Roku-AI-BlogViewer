@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ChannelMatchTask" extends="Task">
+    <script type="text/brightscript" uri="pkg:/components/ChannelMatchTask.brs" />
+    <interface>
+        <field id="dataBaseUrl"      type="string" value="" />
+        <field id="articleKeywords"  type="string" value="" />
+        <field id="matchedChannels"  type="string" value="" alwaysNotify="true" />
+        <field id="urlHistory"       type="string" value="" alwaysNotify="true" />
+        <field id="taskProgress"     type="string" value="" alwaysNotify="true" />
+        <field id="taskError"        type="string" value="" alwaysNotify="true" />
+        <field id="taskState"        type="string" value="idle" alwaysNotify="true" />
+    </interface>
+</component>

@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainNarratorGroup" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        ' ----------------------------------------------------------------
+        ' Viseme table - 9 mouth shapes as rectangle descriptors
+        ' Each entry: [y-offset from lip-centre, width, height, label]
+        ' All drawn relative to mouth anchor at face position
+        ' ----------------------------------------------------------------
+        sub init()
+            print "MainNarratorGroup: init()"
+            m.sectionLabel  = m.top.findNode("sectionLabel")
+            m.narrationText = m.top.findNode("narrationText")
+            m.onAirRect     = m.top.findNode("onAirRect")
+            m.onAirLabel    = m.top.findNode("onAirLabel")
+            m.videoNode     = m.top.findNode("videoFeed")
+            m.zoomLabel     = m.top.findNode("zoomLabel")
+            m.videoBg       = m.top.findNode("videoBg")
+            m.pulseTimer    = m.top.findNode("pulseTimer")
+            m.visemeTimer   = m.top.findNode("visemeTimer")
+            m.blinkTimer    = m.top.findNode("blinkTimer")
+            m.bobTimer      = m.top.findNode("bobTimer")
+            m.faceGroup     = m.top.findNode("faceGroup")
+            m.headGroup     = m.top.findNode("headGroup")
+
+            ' Mouth shape nodes
+            m.mouth         = m.top.findNode("mouth")
+            m.mouthInner    = m.top.findNode("mouthInner")
+            m.mouthTop      = m.top.findNode("mouthTop")
+            m.mouthBottom   = m.top.findNode("mouthBottom")
+
+            ' Eye nodes
+            m.eyeL          = m.top.findNode("eyeL")
+            m.eyeR          = m.top.findNode("eyeR")
+            m.lidL          = m.top.findNode("lidL")
+            m.lidR          = m.top.findNode("lidR")
+
+            m.pulseTimer.observeField("fire", "onPulse")
+            m.visemeTimer.observeField("fire", "onViseme")
+            m.blinkTimer.observeField("fire", "onBlink")
+            m.bobTimer.observeField("fire", "onBob")
+
+            m.pulseState    = false
+            m.isZoomed      = false
+            m.isNarrating   = false
+            m.blinkState    = 0   ' 0=open 1=half 2=closed 3=half
+            m.bobPhase      = 0   ' 0..7 sine approximation
+            m.bobBaseY      = 18  ' face group default Y
+
+            ' Viseme sequence - cycles when narrating
+            ' Shapes: rest, open, oh, ee, oo, fv, th, mbp, wide
+            m.visemeSeq     = ["rest","open","oh","ee","rest","mbp","oh","oo","ee","rest","fv","th","open","rest"]
+            m.visemeIdx     = 0
+
+            ' Bob Y offsets (sine approximation, 8 steps)
+            m.bobOffsets    = [0, -1, -2, -3, -2, -1, 0, 1]
+
+            startVideo()
+            btvSetMouth("rest")
+        end sub
+
+        sub startVideo()
+            videoContent = CreateObject("roSGNode", "ContentNode")
+            videoContent.url          = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            videoContent.title        = "BlogTV Live Feed"
+            videoContent.streamFormat = "mp4"
+            m.videoNode.content = videoContent
+            m.videoNode.control = "play"
+            m.videoNode.loop    = true
+        end sub
+
+        ' ----------------------------------------------------------------
+        ' Mouth shape engine
+        ' Each viseme adjusts: outer lip rect, inner dark rect,
+        ' top-lip rect, bottom-lip rect
+        ' All coords relative to mouth anchor [0,0] = top-left of mouth area
+        ' ----------------------------------------------------------------
+        sub btvSetMouth(shape as String)
+            ' Defaults - will be overridden per shape
+            ' mouth outer:  translation, width, height, color
+            ' mouthInner:   translation, width, height
+            ' mouthTop:     translation, width, height
+            ' mouthBottom:  translation, width, height
+
+            if shape = "rest"
+                ' Thin closed line
+                m.mouth.translation      = [0, 10]
+                m.mouth.width            = 36
+                m.mouth.height           = 6
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [2, 2]
+                m.mouthInner.width       = 32
+                m.mouthInner.height      = 2
+                m.mouthTop.height        = 0
+                m.mouthBottom.height     = 0
+
+            else if shape = "open"
+                ' Open mouth, medium
+                m.mouth.translation      = [0, 6]
+                m.mouth.width            = 38
+                m.mouth.height           = 18
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [3, 3]
+                m.mouthInner.width       = 32
+                m.mouthInner.height      = 12
+                m.mouthTop.translation   = [0, 0]
+                m.mouthTop.width         = 38
+                m.mouthTop.height        = 4
+                m.mouthBottom.translation = [0, 14]
+                m.mouthBottom.width      = 38
+                m.mouthBottom.height     = 4
+
+            else if shape = "oh"
+                ' Rounded O shape
+                m.mouth.translation      = [4, 4]
+                m.mouth.width            = 28
+                m.mouth.height           = 22
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [5, 4]
+                m.mouthInner.width       = 18
+                m.mouthInner.height      = 14
+                m.mouthTop.translation   = [2, 0]
+                m.mouthTop.width         = 24
+                m.mouthTop.height        = 5
+                m.mouthBottom.translation = [2, 17]
+                m.mouthBottom.width      = 24
+                m.mouthBottom.height     = 5
+
+            else if shape = "ee"
+                ' Wide smile, teeth showing
+                m.mouth.translation      = [0, 8]
+                m.mouth.width            = 40
+                m.mouth.height           = 12
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [2, 3]
+                m.mouthInner.width       = 36
+                m.mouthInner.height      = 6
+                m.mouthTop.translation   = [0, 0]
+                m.mouthTop.width         = 40
+                m.mouthTop.height        = 3
+                m.mouthBottom.translation = [0, 9]
+                m.mouthBottom.width      = 40
+                m.mouthBottom.height     = 3
+
+            else if shape = "oo"
+                ' Small rounded pucker
+                m.mouth.translation      = [8, 5]
+                m.mouth.width            = 20
+                m.mouth.height           = 18
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [4, 4]
+                m.mouthInner.width       = 12
+                m.mouthInner.height      = 10
+                m.mouthTop.translation   = [2, 0]
+                m.mouthTop.width         = 16
+                m.mouthTop.height        = 5
+                m.mouthBottom.translation = [2, 13]
+                m.mouthBottom.width      = 16
+                m.mouthBottom.height     = 5
+
+            else if shape = "fv"
+                ' Bottom lip tucked under top teeth
+                m.mouth.translation      = [0, 10]
+                m.mouth.width            = 36
+                m.mouth.height           = 8
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [2, 2]
+                m.mouthInner.width       = 32
+                m.mouthInner.height      = 4
+                m.mouthTop.translation   = [0, 0]
+                m.mouthTop.width         = 36
+                m.mouthTop.height        = 10  ' thick top = teeth
+                m.mouthTop.color         = "0xE8D8C0FF"  ' tooth colour
+                m.mouthBottom.height     = 0
+
+            else if shape = "th"
+                ' Tongue between teeth
+                m.mouth.translation      = [0, 9]
+                m.mouth.width            = 34
+                m.mouth.height           = 10
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [4, 2]
+                m.mouthInner.width       = 14
+                m.mouthInner.height      = 6  ' tongue tip
+                m.mouthTop.translation   = [0, 0]
+                m.mouthTop.width         = 34
+                m.mouthTop.height        = 9
+                m.mouthBottom.height     = 0
+
+            else if shape = "mbp"
+                ' Lips pressed together (m, b, p sounds)
+                m.mouth.translation      = [0, 11]
+                m.mouth.width            = 36
+                m.mouth.height           = 4
+                m.mouth.color            = "0xB06050FF"
+                m.mouthInner.height      = 0
+                m.mouthTop.height        = 0
+                m.mouthBottom.height     = 0
+
+            else if shape = "wide"
+                ' Big open laugh/shout
+                m.mouth.translation      = [0, 4]
+                m.mouth.width            = 42
+                m.mouth.height           = 24
+                m.mouth.color            = "0xC07060FF"
+                m.mouthInner.translation = [2, 3]
+                m.mouthInner.width       = 38
+                m.mouthInner.height      = 18
+                m.mouthTop.translation   = [0, 0]
+                m.mouthTop.width         = 42
+                m.mouthTop.height        = 4
+                m.mouthBottom.translation = [0, 20]
+                m.mouthBottom.width      = 42
+                m.mouthBottom.height     = 4
+            end if
+
+            ' Reset tooth colour for non-fv shapes
+            if shape <> "fv"
+                m.mouthTop.color = "0xC07060FF"
+            end if
+        end sub
+
+        ' ----------------------------------------------------------------
+        ' Animation timers
+        ' ----------------------------------------------------------------
+        sub onViseme(event as Object)
+            if not m.isNarrating then return
+            m.visemeIdx = m.visemeIdx + 1
+            if m.visemeIdx >= m.visemeSeq.count() then m.visemeIdx = 0
+            btvSetMouth(m.visemeSeq[m.visemeIdx])
+        end sub
+
+        sub onBlink(event as Object)
+            m.blinkState = m.blinkState + 1
+            if m.blinkState > 3 then m.blinkState = 0
+
+            if m.blinkState = 0
+                ' Eyes fully open
+                m.lidL.height = 4
+                m.lidR.height = 4
+            else if m.blinkState = 1
+                ' Half closed
+                m.lidL.height = 8
+                m.lidR.height = 8
+            else if m.blinkState = 2
+                ' Fully closed
+                m.lidL.height = 16
+                m.lidR.height = 16
+            else if m.blinkState = 3
+                ' Opening again - half
+                m.lidL.height = 8
+                m.lidR.height = 8
+                ' Reset blink timer to random-ish interval (3-6s)
+                ' Alternate between two durations to fake randomness
+                if m.pulseState = true
+                    m.blinkTimer.duration = 3.2
+                else
+                    m.blinkTimer.duration = 5.7
+                end if
+            end if
+        end sub
+
+        sub onBob(event as Object)
+            m.bobPhase = m.bobPhase + 1
+            if m.bobPhase >= 8 then m.bobPhase = 0
+            offset = m.bobOffsets[m.bobPhase]
+            m.headGroup.translation = [14, m.bobBaseY + offset]
+        end sub
+
+        ' ----------------------------------------------------------------
+        ' Existing handlers
+        ' ----------------------------------------------------------------
+        sub onSectionTitleChange(event as Object)
+            m.sectionLabel.text = "> " + event.getData()
+        end sub
+
+        sub onNarrationTextChange(event as Object)
+            m.narrationText.text = event.getData()
+        end sub
+
+        sub onIsNarratingChange(event as Object)
+            narrating = event.getData()
+            m.isNarrating = narrating
+            if narrating = true
+                m.onAirRect.visible  = true
+                m.onAirLabel.visible = true
+                m.pulseTimer.control = "start"
+                m.visemeTimer.control = "start"
+                m.bobTimer.control   = "start"
+                m.blinkTimer.control = "start"
+            else
+                m.onAirRect.visible  = false
+                m.onAirLabel.visible = false
+                m.pulseTimer.control = "stop"
+                m.visemeTimer.control = "stop"
+                m.bobTimer.control   = "stop"
+                m.onAirRect.opacity  = 1.0
+                btvSetMouth("rest")
+                m.headGroup.translation = [14, m.bobBaseY]
+            end if
+        end sub
+
+        sub onPulse(event as Object)
+            m.pulseState = not m.pulseState
+            if m.pulseState = true
+                m.onAirRect.opacity = 0.3
+            else
+                m.onAirRect.opacity = 1.0
+            end if
+        end sub
+
+        sub onZoomToggleChange(event as Object)
+            doZoom = event.getData()
+            if doZoom = true
+                m.isZoomed = true
+                m.videoNode.translation = [-265, -60]
+                m.videoNode.width       = 1280
+                m.videoNode.height      = 680
+                m.videoBg.width         = 1280
+                m.videoBg.height        = 680
+                m.videoBg.translation   = [-265, -60]
+                m.zoomLabel.text        = "[-] Zoom Out  (Play/Opt)"
+            else
+                m.isZoomed = false
+                m.videoNode.translation = [10, 10]
+                m.videoNode.width       = 1260
+                m.videoNode.height      = 380
+                m.videoBg.width         = 1260
+                m.videoBg.height        = 380
+                m.videoBg.translation   = [10, 10]
+                m.zoomLabel.text        = "[+] Zoom In  (Play/Opt)"
+            end if
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="sectionTitle"  type="string"  value="Welcome to BlogTV" onChange="onSectionTitleChange"  />
+        <field id="narrationText" type="string"  value="Loading..."        onChange="onNarrationTextChange" />
+        <field id="isNarrating"   type="boolean" value="false"             onChange="onIsNarratingChange"   />
+        <field id="zoomToggle"    type="boolean" value="false"             onChange="onZoomToggleChange"    alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Panel background -->
+        <Rectangle width="1280" height="560" color="0x0B0B1EFF" />
+        <Rectangle translation="[0,0]"   width="1280" height="2" color="0xFF00FFAA" />
+        <Rectangle translation="[0,558]" width="1280" height="2" color="0xFF00FFAA" />
+
+        <!-- Video background -->
+        <Rectangle id="videoBg" translation="[10,10]" width="1260" height="380" color="0x000000FF" />
+
+        <!-- Video node -->
+        <Video id="videoFeed" translation="[10,10]" width="1260" height="380" enableUI="false" />
+
+        <!-- Scanline overlay -->
+        <Rectangle translation="[10,10]" width="1260" height="380" color="0x00000033" opacity="0.3" />
+
+        <!-- ============================================================
+             NARRATOR FACE
+             Positioned bottom-right of video area: anchor [560, 260]
+             Head group bobs up/down via onBob timer
+             ============================================================ -->
+        <Group id="faceGroup" translation="[1140, 240]">
+
+            <!-- Head group - this whole group bobs -->
+            <Group id="headGroup" translation="[14, 18]">
+
+                <!-- Neck -->
+                <Rectangle translation="[22, 90]" width="16" height="20" color="0xD4A882FF" />
+
+                <!-- Head shape (oval approximated with stacked rects) -->
+                <Rectangle translation="[4,  4]" width="52" height="80" color="0xD4A882FF" />
+                <Rectangle translation="[0, 12]" width="60" height="62" color="0xD4A882FF" />
+                <Rectangle translation="[2,  8]" width="56" height="72" color="0xD4A882FF" />
+
+                <!-- Hair -->
+                <Rectangle translation="[0,  0]" width="60" height="20" color="0x3A2210FF" />
+                <Rectangle translation="[2,  0]" width="56" height="12" color="0x3A2210FF" />
+                <Rectangle translation="[0,  8]" width="6"  height="16" color="0x3A2210FF" />
+                <Rectangle translation="[54, 8]" width="6"  height="16" color="0x3A2210FF" />
+
+                <!-- LEFT EYE -->
+                <Rectangle translation="[8, 32]"  width="16" height="16" color="0xF5F5FFFF" />
+                <Rectangle id="eyeL" translation="[11, 35]" width="10" height="10" color="0x2244AAFF" />
+                <Rectangle translation="[13, 37]" width="4"  height="4"  color="0x111133FF" />
+                <Rectangle translation="[14, 36]" width="2"  height="2"  color="0xFFFFFFFF" />
+                <!-- Left eyelid (height grows to cover eye = blink) -->
+                <Rectangle id="lidL" translation="[8, 32]"  width="16" height="4"  color="0xD4A882FF" />
+
+                <!-- RIGHT EYE -->
+                <Rectangle translation="[36, 32]" width="16" height="16" color="0xF5F5FFFF" />
+                <Rectangle id="eyeR" translation="[39, 35]" width="10" height="10" color="0x2244AAFF" />
+                <Rectangle translation="[41, 37]" width="4"  height="4"  color="0x111133FF" />
+                <Rectangle translation="[42, 36]" width="2"  height="2"  color="0xFFFFFFFF" />
+                <!-- Right eyelid -->
+                <Rectangle id="lidR" translation="[36, 32]" width="16" height="4"  color="0xD4A882FF" />
+
+                <!-- Eyebrows -->
+                <Rectangle translation="[7,  26]" width="18" height="4" color="0x3A2210FF" />
+                <Rectangle translation="[35, 26]" width="18" height="4" color="0x3A2210FF" />
+
+                <!-- Nose -->
+                <Rectangle translation="[27, 52]" width="6"  height="10" color="0xC49070FF" />
+                <Rectangle translation="[24, 60]" width="12" height="4"  color="0xC49070FF" />
+
+                <!-- MOUTH AREA (anchor top-left = [12, 68]) -->
+                <Group translation="[12, 68]">
+                    <!-- Outer lip shape -->
+                    <Rectangle id="mouth" translation="[0,10]" width="36" height="6" color="0xC07060FF" />
+                    <!-- Inner mouth dark -->
+                    <Rectangle id="mouthInner" translation="[2,12]" width="32" height="2" color="0x1A0808FF" />
+                    <!-- Top lip -->
+                    <Rectangle id="mouthTop"    translation="[0,10]" width="36" height="0" color="0xC07060FF" />
+                    <!-- Bottom lip -->
+                    <Rectangle id="mouthBottom" translation="[0,14]" width="36" height="0" color="0xC07060FF" />
+                </Group>
+
+                <!-- Collar / shirt -->
+                <Rectangle translation="[10,108]" width="40" height="8"  color="0x1A1A4AFF" />
+                <Rectangle translation="[16,108]" width="8"  height="12" color="0xF5F5FFFF" />
+                <Rectangle translation="[36,108]" width="8"  height="12" color="0xF5F5FFFF" />
+
+            </Group>
+            <!-- end headGroup -->
+
+            <!-- Face border glow -->
+            <Rectangle translation="[-2,-2]" width="92" height="128" color="0xFF00FFFF" opacity="0.2" />
+
+        </Group>
+        <!-- end faceGroup -->
+
+        <!-- ON AIR badge -->
+        <Rectangle id="onAirRect" translation="[18, 18]" width="90" height="28" color="0xFF003CFF" visible="false" />
+        <Label id="onAirLabel"    translation="[26, 22]" text="* ON AIR" color="0xFFFFFFFF" visible="false" />
+
+        <!-- Zoom hint -->
+        <Label id="zoomLabel" translation="[1060, 18]" width="200" height="22"
+            text="[+] Zoom In  (Play/Opt)" color="0xFFCC00FF" visible="true" />
+
+        <!-- Section heading bar -->
+        <Rectangle translation="[10, 400]" width="1260" height="40" color="0x1A004FFF" />
+        <Rectangle translation="[10, 400]" width="4"   height="40" color="0xFF00FFFF" />
+        <Label id="sectionLabel" translation="[20, 406]" width="1240" height="30"
+            text="> Welcome to BlogTV" color="0xE0E0FFFF" truncateOnDelimiter="..." />
+
+        <!-- Narration text area -->
+        <Rectangle translation="[10, 448]" width="1260" height="100" color="0x080820FF" />
+        <Label id="narrationText" translation="[20, 456]" width="1240" height="86"
+            text="Loading..." color="0xC8C8E0FF" wrap="true" maxLines="5" />
+
+        <!-- Timers -->
+        <Timer id="pulseTimer"  repeat="true" duration="0.5"  />
+        <Timer id="visemeTimer" repeat="true" duration="0.09" />
+        <Timer id="blinkTimer"  repeat="true" duration="3.8"  />
+        <Timer id="bobTimer"    repeat="true" duration="0.12" />
+
+    </children>
+</component>

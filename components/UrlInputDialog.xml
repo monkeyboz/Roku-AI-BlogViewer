@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="UrlInputDialog" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.bg          = m.top.findNode("dialogBg")
+            m.inputBox    = m.top.findNode("urlInput")
+            m.historyList = m.top.findNode("historyList")
+            m.statusLabel = m.top.findNode("dialogStatus")
+            m.titleLabel  = m.top.findNode("dialogTitle")
+            m.historyData = []
+            m.inputBox.observeField("text", "onTextChange")
+            m.historyList.observeField("itemSelected", "onHistorySelected")
+            m.inputBox.setFocus(true)
+        end sub
+
+        sub onVisibleChange(event as Object)
+            if event.getData() = true
+                m.inputBox.text = ""
+                m.inputBox.setFocus(true)
+                btvRefreshHistory("")
+            end if
+        end sub
+
+        sub onUrlHistoryChange(event as Object)
+            raw = event.getData()
+            if raw = "" then return
+            parsed = ParseJson(raw)
+            if type(parsed) = "roArray"
+                m.historyData = parsed
+                btvRefreshHistory("")
+            end if
+        end sub
+
+        sub onTextChange(event as Object)
+            typed = event.getData()
+            btvRefreshHistory(typed)
+        end sub
+
+        sub btvRefreshHistory(filter as String)
+            root = CreateObject("roSGNode", "ContentNode")
+            i = 0
+            count = 0
+            while i < m.historyData.count()
+                url = m.historyData[i]
+                i = i + 1
+                if type(url) = "roString"
+                    show = false
+                    if filter = ""
+                        show = true
+                    else if instr(1, lcase(url), lcase(filter)) > 0
+                        show = true
+                    end if
+                    if show = true
+                        child = CreateObject("roSGNode", "ContentNode")
+                        child.title = url
+                        root.appendChild(child)
+                        count = count + 1
+                    end if
+                end if
+                if count >= 8 then exit while
+            end while
+            m.historyList.content = root
+            if count > 0
+                m.statusLabel.text = mid(stri(count), 2) + " matches - OK to use, or keep typing"
+            else
+                m.statusLabel.text = "No history matches - type full URL then OK"
+            end if
+        end sub
+
+        sub onHistorySelected(event as Object)
+            idx = event.getData()
+            node = m.historyList.content
+            if type(node) = "roInvalid" then return
+            child = node.getChild(idx)
+            if type(child) = "roInvalid" then return
+            m.top.selectedUrl = child.title
+        end sub
+
+        function onKeyEvent(key as String, press as Boolean) as Boolean
+            if press = false then return false
+            if key = "back"
+                m.top.cancelled = true
+                return true
+            else if key = "OK" or key = "play"
+                typed = m.inputBox.text
+                if typed <> ""
+                    m.top.selectedUrl = typed
+                    return true
+                end if
+            else if key = "down"
+                m.historyList.setFocus(true)
+                return true
+            else if key = "up"
+                m.inputBox.setFocus(true)
+                return true
+            end if
+            return false
+        end function
+        ]]>
+    </script>
+
+    <interface>
+        <field id="urlHistory"  type="string"  value=""    onChange="onUrlHistoryChange" />
+        <field id="selectedUrl" type="string"  value=""    alwaysNotify="true" />
+        <field id="cancelled"   type="boolean" value="false" alwaysNotify="true" />
+        <field id="visible"     type="boolean" value="false" onChange="onVisibleChange" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Full screen dim -->
+        <Rectangle width="1280" height="720"
+            translation="[-200, -200]"
+            color="0x000000BB" />
+
+        <!-- Dialog panel -->
+        <Rectangle id="dialogBg"
+            translation="[100, 80]"
+            width="1080" height="560"
+            color="0x0A0A1EFF" />
+
+        <!-- Neon border -->
+        <Rectangle translation="[100, 80]"   width="1080" height="2"   color="0x00FFFFFF" />
+        <Rectangle translation="[100, 638]"  width="1080" height="2"   color="0x00FFFFFF" />
+        <Rectangle translation="[100, 80]"   width="2"    height="560" color="0x00FFFFFF" />
+        <Rectangle translation="[1178, 80]"  width="2"    height="560" color="0x00FFFFFF" />
+
+        <!-- Header -->
+        <Rectangle translation="[100, 80]"  width="1080" height="48" color="0x080820FF" />
+        <Rectangle translation="[100, 80]"  width="4"    height="48" color="0x00FFFFFF" />
+        <Label id="dialogTitle"
+            translation="[116, 90]"
+            text="ENTER URL"
+            color="0x00FFFFFF" />
+        <Label translation="[860, 93]"
+            text="Back: cancel | OK: load"
+            color="0x5050A0FF" />
+
+        <!-- URL text input -->
+        <Rectangle translation="[116, 144]" width="1048" height="44" color="0x121230FF" />
+        <Rectangle translation="[116, 144]" width="4"    height="44" color="0xFF00FFFF" />
+        <TextEditBox id="urlInput"
+            translation="[124, 148]"
+            width="1036"
+            text=""
+            hintText="https://en.wikipedia.org/wiki/..."
+            textColor="0xE0E0FFFF"
+            hintTextColor="0x404060FF" />
+
+        <!-- History label -->
+        <Rectangle translation="[116, 202]" width="1048" height="28" color="0x0D0D28FF" />
+        <Label translation="[124, 207]"
+            text="URL HISTORY"
+            color="0xFF00FFFF" />
+
+        <!-- History list -->
+        <MarkupList id="historyList"
+            translation="[116, 234]"
+            itemComponentName="UrlHistoryItem"
+            itemSize="[1048, 38]"
+            itemSpacing="[0, 2]"
+            numRows="8" />
+
+        <!-- Status bar -->
+        <Rectangle translation="[100, 628]" width="1080" height="32" color="0x080818FF" />
+        <Label id="dialogStatus"
+            translation="[116, 634]"
+            width="1040" height="22"
+            text="Type a URL or select from history"
+            color="0x00FFCCFF" />
+    </children>
+</component>

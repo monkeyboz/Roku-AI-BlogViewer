@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SectionsGrid" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            print "SectionsGrid: init()"
+            m.list       = m.top.findNode("sectionList")
+            m.panelLabel = m.top.findNode("panelLabel")
+            setupList()
+        end sub
+
+        sub setupList()
+            m.list.itemComponentName = "SectionCard"
+            m.list.itemSize          = [252, 88]
+            m.list.itemSpacing       = [0, 4]
+            m.list.numRows           = 6
+            m.list.observeField("itemSelected", "onSectionSelected")
+            m.list.observeField("itemFocused",  "onSectionFocused")
+        end sub
+
+        sub onContentChange(event as Object)
+            node = event.getData()
+            m.list.content = node
+            count = node.getChildCount()
+            m.panelLabel.text = "SECTIONS (" + mid(stri(count), 2) + ")"
+        end sub
+
+        sub onSectionFocused(event as Object)
+            m.top.focusedSection = event.getData()
+        end sub
+
+        sub onSectionSelected(event as Object)
+            idx = event.getData()
+            print "SectionsGrid: selected index=" + stri(idx)
+            m.top.selectedSection = idx
+        end sub
+
+        sub onActivateChange(event as Object)
+            if event.getData() = true
+                m.list.setFocus(true)
+                m.panelLabel.color = "0x00FFFFFF"
+            else
+                m.panelLabel.color = "0x5050A0FF"
+            end if
+        end sub
+
+        ' Intercept Right key and signal the scene via a field toggle
+        ' Up/Down/OK/Back are left to the MarkupList to handle naturally
+        function onKeyEvent(key as String, press as Boolean) as Boolean
+            if press = false then return false
+            if key = "right"
+                ' Toggle field - scene observes this and calls btvOpenDrawer(next)
+                m.top.requestFocusRight = not m.top.requestFocusRight
+                return true
+            end if
+            return false
+        end function
+        ]]>
+    </script>
+
+    <interface>
+        <field id="content"            type="node"    onChange="onContentChange"   />
+        <field id="selectedSection"    type="integer" value="-1" alwaysNotify="true" />
+        <field id="focusedSection"     type="integer" value="-1" alwaysNotify="true" />
+        <field id="activate"           type="boolean" value="false" alwaysNotify="true" onChange="onActivateChange" />
+        <field id="requestFocusRight"  type="boolean" value="false" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <Rectangle width="258" height="605" color="0x0E0E22FF" />
+        <Rectangle translation="[0,0]" width="3" height="605" color="0x00FFFFFF" />
+        <Rectangle translation="[3,0]" width="255" height="30" color="0x161630FF" />
+        <Label id="panelLabel"
+            translation="[12, 6]"
+            text="SECTIONS"
+            color="0x5050A0FF" />
+        <MarkupList id="sectionList"
+            translation="[4, 34]" />
+    </children>
+</component>

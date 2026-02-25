@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    HeaderGroup.xml
+    Top bar: channel logo + page title + live status badge.
+    Width: 1280px, Height: 60px.
+    Cyberpunk neon palette: cyan logo, magenta accents.
+-->
+<component name="HeaderGroup" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.logoLabel   = m.top.findNode("logoLabel")
+            m.titleLabel  = m.top.findNode("titleLabel")
+            m.statusLabel = m.top.findNode("statusLabel")
+            m.badge       = m.top.findNode("liveBadge")
+        end sub
+
+        ' External fields drive the display
+        sub onPageTitleChange(event as Object)
+            m.titleLabel.text = event.getData()
+        end sub
+
+        sub onStatusTextChange(event as Object)
+            m.statusLabel.text = event.getData()
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="pageTitle"  type="string" value="BlogTV"       onChange="onPageTitleChange"  />
+        <field id="statusText" type="string" value="Connecting..." onChange="onStatusTextChange" />
+    </interface>
+
+    <children>
+        <!-- Background bar -->
+        <Rectangle width="1280" height="58"
+            color="0x0A0A14FF" />
+
+        <!-- Neon bottom border -->
+        <Rectangle translation="[0,57]"
+            width="1280" height="2"
+            color="0x00FFFFFF" opacity="0.6" />
+
+        <!-- Channel logo text -->
+        <Label id="logoLabel"
+            translation="[18, 10]"
+            text="[TV] BLOG.TV"
+            color="0x00FFFFFF"
+            />
+
+        <!-- Separator pipe -->
+        <Rectangle translation="[148, 12]"
+            width="2" height="34"
+            color="0xFF00FFFF" opacity="0.7" />
+
+        <!-- Page title (centre area) -->
+        <Label id="titleLabel"
+            translation="[162, 14]"
+            width="800" height="30"
+            text="BlogTV"
+            color="0xE0E0E0FF"
+            truncateOnDelimiter="..." />
+
+        <!-- Live badge (right side) -->
+        <Rectangle id="liveBadge"
+            translation="[1050, 14]"
+            width="60" height="28"
+            color="0xFF003CFF" />
+
+        <Label translation="[1058, 18]"
+            text="* LIVE"
+            color="0xFFFFFFFF" />
+
+        <!-- Status text -->
+        <Label id="statusLabel"
+            translation="[1120, 18]"
+            width="150" height="24"
+            text="Connecting..."
+            color="0x00FFFFFF"
+            opacity="0.8" />
+    </children>
+</component>

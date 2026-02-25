@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    SectionCard.xml
+    Item component used by SectionsGrid MarkupList.
+    Shows a thumbnail placeholder + section heading.
+    Width: 252px | Height: 88px
+-->
+<component name="SectionCard" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.bg      = m.top.findNode("cardBg")
+            m.poster  = m.top.findNode("cardPoster")
+            m.title   = m.top.findNode("cardTitle")
+            m.focused = false
+        end sub
+
+        function itemContent() as Object
+            return m.top.itemContent
+        end function
+
+        sub onItemContentChange()
+            content = m.top.itemContent
+            if type(content) = "roInvalid" then return
+            m.title.text = content.title
+            posterUrl = content.hdGridPosterUrl
+            if type(posterUrl) = "roString" and posterUrl <> ""
+                m.poster.uri = posterUrl
+            end if
+        end sub
+
+        sub onFocusChange()
+            if m.top.focusPercent > 0.5
+                m.bg.color = "0x1A1A40FF"
+                m.title.color = "0x00FFFFFF"
+            else
+                m.bg.color = "0x0E0E22FF"
+                m.title.color = "0xB0B0C0FF"
+            end if
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="itemContent"   type="node"  onChange="onItemContentChange" />
+        <field id="focusPercent"  type="float" onChange="onFocusChange" />
+    </interface>
+
+    <children>
+        <Rectangle id="cardBg"
+            width="252" height="86"
+            color="0x0E0E22FF" />
+
+        <!-- Neon bottom divider -->
+        <Rectangle translation="[8, 84]"
+            width="236" height="1"
+            color="0x00FFFF44" />
+
+        <!-- Thumbnail placeholder -->
+        <Poster id="cardPoster"
+            translation="[6, 6]"
+            width="70" height="74"
+            uri="pkg:/images/section_thumb.png"
+            loadDisplayMode="scaleToFit" />
+
+        <!-- Section title -->
+        <Label id="cardTitle"
+            translation="[84, 12]"
+            width="160" height="62"
+            text="Section"
+            color="0xB0B0C0FF"
+            wrap="true"
+            maxLines="3" />
+    </children>
+</component>

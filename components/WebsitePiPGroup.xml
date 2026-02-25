@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    WebsitePiPGroup.xml
+    Two modes:
+      MINI  - 280x185 thumbnail in bottom-right corner (default)
+      ZOOM  - 880x580 fullscreen browser view with navigable section hotspots
+-->
+<component name="WebsitePiPGroup" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            print "WebsitePiPGroup: init()"
+            m.urlLabel    = m.top.findNode("urlLabel")
+            m.titleLabel  = m.top.findNode("pipTitle")
+            m.blinkTimer  = m.top.findNode("blinkTimer")
+            m.miniView    = m.top.findNode("miniView")
+            m.zoomView    = m.top.findNode("zoomView")
+            m.zoomTitle   = m.top.findNode("zoomTitle")
+            m.zoomUrl     = m.top.findNode("zoomUrl")
+            m.zoomHints   = m.top.findNode("zoomHints")
+            m.hotspotRoot = m.top.findNode("hotspotRoot")
+            m.cursor      = m.top.findNode("cursor")
+
+            m.blinkTimer.observeField("fire", "onBlink")
+            m.blinkTimer.control = "start"
+            m.blinkState  = false
+            m.sections    = []
+            m.hotspotIdx  = 0
+            m.zoomed      = false
+        end sub
+
+        ' = Data =
+
+        sub onPageUrlChange(event as Object)
+            url = event.getData()
+            display = url
+            if len(url) > 38 then display = left(url, 35) + "..."
+            m.urlLabel.text  = "[WEB] " + display
+            m.zoomUrl.text   = url
+        end sub
+
+        sub onPageTitleChange(event as Object)
+            t = event.getData()
+            if len(t) > 32 then t = left(t, 29) + "..."
+            m.titleLabel.text = t
+            m.zoomTitle.text  = event.getData()
+        end sub
+
+        sub onSectionsChange(event as Object)
+            raw = event.getData()
+            if raw = "" then return
+            parsed = ParseJson(raw)
+            if type(parsed) <> "roArray" then return
+            m.sections   = parsed
+            m.hotspotIdx = 0
+            if m.zoomed then btvBuildHotspots()
+        end sub
+
+        ' = Zoom toggle =
+
+        sub onZoomedChange(event as Object)
+            m.zoomed = event.getData()
+            m.miniView.visible = not m.zoomed
+            m.zoomView.visible = m.zoomed
+            if m.zoomed
+                btvBuildHotspots()
+                btvMoveCursor()
+            end if
+        end sub
+
+        ' Build section hotspot rectangles in the zoom view
+        ' Distributes sections evenly down a fake "page" at 880x480 content area
+        sub btvBuildHotspots()
+            ' Clear existing hotspots
+            while m.hotspotRoot.getChildCount() > 0
+                m.hotspotRoot.removeChildIndex(0)
+            end while
+
+            count  = m.sections.count()
+            if count = 0 then return
+
+            ' Fake page is 860px wide, 460px tall
+            ' Stack section blocks with even spacing
+            slotH  = 460 \ count
+            if slotH > 80 then slotH = 80
+            if slotH < 28 then slotH = 28
+            padding = 4
+
+            i = 0
+            while i < count
+                sec = m.sections[i]
+                yPos = 10 + (i * (slotH + padding))
+
+                ' Section block background
+                bg = CreateObject("roSGNode", "Rectangle")
+                bg.translation = [10, yPos]
+                bg.width       = 840
+                bg.height      = slotH
+                bg.color       = "0x1A1A3AFF"
+                m.hotspotRoot.appendChild(bg)
+
+                ' Heading label
+                lbl = CreateObject("roSGNode", "Label")
+                lbl.translation = [18, yPos + 4]
+                lbl.width       = 820
+                lbl.height      = slotH - 8
+                heading = sec.heading
+                if len(heading) > 72 then heading = left(heading, 69) + "..."
+                lbl.text        = "[" + mid(stri(i + 1), 2) + "] " + heading
+                lbl.color       = "0xA0A0D0FF"
+                lbl.wrap        = true
+                m.hotspotRoot.appendChild(lbl)
+
+                i = i + 1
+            end while
+        end sub
+
+        ' Move the cursor highlight to current hotspotIdx
+        sub btvMoveCursor()
+            count = m.sections.count()
+            if count = 0 then return
+            slotH   = 460 \ count
+            if slotH > 80 then slotH = 80
+            if slotH < 28 then slotH = 28
+            padding = 4
+            yPos    = 10 + (m.hotspotIdx * (slotH + padding))
+            m.cursor.translation = [8, yPos]
+            m.cursor.height      = slotH
+        end sub
+
+        ' = Navigation in zoom mode =
+
+        function onKeyEvent(key as String, press as Boolean) as Boolean
+            if press = false then return false
+            if not m.zoomed then return false
+
+            count = m.sections.count()
+            if count = 0 then return false
+
+            if key = "up"
+                if m.hotspotIdx > 0
+                    m.hotspotIdx = m.hotspotIdx - 1
+                    btvMoveCursor()
+                end if
+                return true
+            else if key = "down"
+                if m.hotspotIdx < count - 1
+                    m.hotspotIdx = m.hotspotIdx + 1
+                    btvMoveCursor()
+                end if
+                return true
+            else if key = "OK"
+                m.top.selectedSection = m.hotspotIdx
+                return true
+            else if key = "right"
+                ' Signal scene to cycle focus forward
+                m.top.requestFocusRight = not m.top.requestFocusRight
+                return true
+            else if key = "left"
+                ' Signal scene to cycle focus backward
+                m.top.requestFocusLeft = not m.top.requestFocusLeft
+                return true
+            end if
+            return false
+        end function
+
+        ' = Blink animation (mini mode only) =
+
+        sub onBlink(event as Object)
+            if m.zoomed then return
+            m.blinkState = not m.blinkState
+            op = 0.5
+            if m.blinkState then op = 1.0
+            h1 = m.top.findNode("hotspot1")
+            h2 = m.top.findNode("hotspot2")
+            h3 = m.top.findNode("hotspot3")
+            if type(h1) <> "roInvalid" then h1.opacity = op
+            if type(h2) <> "roInvalid" then h2.opacity = op * 0.7
+            if type(h3) <> "roInvalid" then h3.opacity = op * 0.9
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="pageUrl"          type="string"  value=""    onChange="onPageUrlChange"   />
+        <field id="pageTitle"        type="string"  value=""    onChange="onPageTitleChange" />
+        <field id="sectionsJson"     type="string"  value=""    onChange="onSectionsChange"  />
+        <field id="zoomed"           type="boolean" value="false" onChange="onZoomedChange" alwaysNotify="true" />
+        <field id="selectedSection"  type="integer" value="-1"  alwaysNotify="true" />
+        <field id="requestFocusRight" type="boolean" value="false" alwaysNotify="true" />
+        <field id="requestFocusLeft"  type="boolean" value="false" alwaysNotify="true" />
+    </interface>
+
+    <children>
+
+        <!-- = MINI VIEW (default) = -->
+        <Group id="miniView" visible="true">
+            <Rectangle translation="[-3,-3]" width="286" height="191" color="0xFFCC00FF" opacity="0.6" />
+            <Rectangle width="280" height="185" color="0x111128FF" />
+            <Rectangle translation="[0,0]"   width="280" height="20" color="0x2A2A4AFF" />
+            <Rectangle translation="[30, 3]" width="215" height="14" color="0x1A1A30FF" />
+            <Label id="urlLabel"   translation="[35, 4]"  width="205" height="12" text="[WEB] example.com" color="0x8080AAFF" />
+            <Label id="pipTitle"   translation="[6, 26]"  width="268" height="18" text="Page Title"        color="0xE0E0FFFF" truncateOnDelimiter="..." />
+            <Rectangle translation="[6, 50]"  width="200" height="6" color="0x3A3A5AFF" />
+            <Rectangle translation="[6, 62]"  width="240" height="6" color="0x3A3A5AFF" />
+            <Rectangle translation="[6, 74]"  width="180" height="6" color="0x3A3A5AFF" />
+            <Rectangle translation="[6, 86]"  width="220" height="6" color="0x2A2A4AFF" />
+            <Rectangle translation="[6, 98]"  width="190" height="6" color="0x3A3A5AFF" />
+            <Rectangle translation="[6,110]"  width="230" height="6" color="0x2A2A4AFF" />
+            <Rectangle translation="[6,122]"  width="160" height="6" color="0x3A3A5AFF" />
+            <Rectangle translation="[6,140]"  width="248" height="6" color="0x2A2A4AFF" />
+            <Rectangle translation="[6,152]"  width="200" height="6" color="0x3A3A5AFF" />
+            <Rectangle id="hotspot1" translation="[8,  48]" width="70"  height="22" color="0xFFCC00FF" opacity="0.8" />
+            <Label translation="[12, 52]" text="S H1"           color="0x000000FF" />
+            <Rectangle id="hotspot2" translation="[130,82]" width="110" height="22" color="0xFFCC00FF" opacity="0.6" />
+            <Label translation="[134,86]" text="S Section 2"    color="0x000000FF" />
+            <Rectangle id="hotspot3" translation="[8, 136]" width="90"  height="22" color="0x00FFFFFF" opacity="0.7" />
+            <Label translation="[12,140]" text="[HEX] Paragraph" color="0x000000FF" />
+            <Rectangle translation="[220,160]" width="56" height="20" color="0x00000099" />
+            <Label translation="[224,163]" text="PiP [HEX]" color="0xFFCC00FF" />
+        </Group>
+
+        <!-- = ZOOM VIEW = -->
+        <Group id="zoomView" translation="[-570, -415]" visible="false">
+
+            <!-- Outer neon frame 880x580 -->
+            <Rectangle translation="[-3,-3]" width="886" height="586" color="0xFFCC00FF" opacity="0.7" />
+            <Rectangle width="880" height="580" color="0x080818FF" />
+
+            <!-- Browser chrome bar -->
+            <Rectangle translation="[0,0]"   width="880" height="36" color="0x1A1A34FF" />
+            <Rectangle translation="[0,36]"  width="880" height="2"  color="0xFFCC00FF" opacity="0.5" />
+
+            <!-- Tab/title area -->
+            <Rectangle translation="[8,4]"   width="260" height="28" color="0x0E0E2AFF" />
+            <Label id="zoomTitle" translation="[14,8]" width="248" height="22"
+                text="Page Title" color="0xE0E0FFFF" truncateOnDelimiter="..." />
+
+            <!-- Address bar -->
+            <Rectangle translation="[280,6]" width="480" height="24" color="0x121230FF" />
+            <Label id="zoomUrl"   translation="[288,9]" width="464" height="18"
+                text="" color="0x7070A0FF" />
+
+            <!-- Hint bar -->
+            <Rectangle translation="[0,558]" width="880" height="22" color="0x0A0A20FF" />
+            <Label id="zoomHints" translation="[8,560]" width="864" height="18"
+                text="Up/Down: navigate sections | OK: select | Left/Right: change panel"
+                color="0x5050A0FF" />
+
+            <!-- Page content area - section hotspots rendered here -->
+            <Rectangle translation="[0,38]"  width="880" height="520" color="0x0D0D22FF" />
+
+            <!-- Cursor highlight (moves to selected section) -->
+            <Rectangle id="cursor"
+                translation="[8,10]"
+                width="864" height="40"
+                color="0xFFCC00FF"
+                opacity="0.15" />
+
+            <!-- Hotspot container - children added dynamically -->
+            <Group id="hotspotRoot" translation="[0,38]" />
+
+        </Group>
+
+        <!-- Blink timer -->
+        <Timer id="blinkTimer" repeat="true" duration="0.8" />
+
+    </children>
+</component>

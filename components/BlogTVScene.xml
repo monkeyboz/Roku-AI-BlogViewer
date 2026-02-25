@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    BlogTVScene.xml  1280x720
+    Layout:
+      [0,0]    Header          1280 x 60
+      [0,60]   MainNarrator    1280 x 560  (full width, always visible)
+      [0,620]  BottomNavBar    1280 x 50
+      [0,720]  StatusBar       1280 x 50   (overlaps bottom - scrolls ticker)
+
+    Drawers (slide up over narrator on OK, back closes):
+      SectionsGrid    - left drawer  [0,60]   260 wide
+      ActionPanel     - right drawer [980,60]  300 wide
+      WebsitePiPGroup - centre overlay, zoomed mode
+
+    Overlays (full):
+      UrlInputDialog
+      StreamsOverlay
+-->
+<component name="BlogTVScene" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/BlogTVScene.brs" />
+
+    <interface>
+        <function name="setDeepLink" />
+    </interface>
+
+    <children>
+
+        <!-- Background -->
+        <Rectangle width="1280" height="720" color="0x0D0D1AFF" />
+
+        <!-- Header -->
+        <HeaderGroup id="headerGroup" translation="[0, 0]" />
+
+        <!-- Main narrator - full width centre stage -->
+        <MainNarratorGroup id="narratorGroup" translation="[0, 60]" />
+
+        <!-- Bottom nav bar - always visible, always focusable -->
+        <BottomNavBar id="navBar" translation="[0, 620]" />
+
+        <!-- Status ticker - sits below nav, scrolls underneath -->
+        <StatusBarGroup id="statusBar" translation="[0, 670]" />
+
+        <!-- --- DRAWERS (hidden by default, opened by nav OK) ------- -->
+
+        <!-- Sections drawer - slides in from left over narrator -->
+        <Group id="sectionsDrawer" translation="[0, 60]" visible="false">
+            <!-- Semi-transparent backdrop so narrator is still hinted -->
+            <Rectangle width="270" height="560" color="0x000000CC" />
+            <SectionsGrid id="sectionsGrid" translation="[0, 0]" />
+        </Group>
+
+        <!-- Actions drawer - slides in from right -->
+        <Group id="actionsDrawer" translation="[970, 60]" visible="false">
+            <Rectangle width="310" height="560" color="0x000000CC" />
+            <ActionButtonsPanel id="actionPanel" translation="[0, 0]" />
+        </Group>
+
+        <!-- PiP / Page View drawer - full overlay centre -->
+        <WebsitePiPGroup id="pipGroup" translation="[190, 60]" visible="false" />
+
+        <!-- --- MODAL OVERLAYS --------------------------------------- -->
+
+        <!-- URL Input Dialog -->
+        <UrlInputDialog id="urlDialog" translation="[0, 0]" visible="false" />
+
+        <!-- Similar Streams overlay -->
+        <Group id="streamsOverlay" translation="[200, 80]" visible="false">
+            <Rectangle width="880" height="520" color="0x000000CC" />
+            <Rectangle translation="[10,10]" width="860" height="500" color="0x00FFFF22" />
+
+            <Rectangle translation="[10,10]" width="860" height="44" color="0x0A0A2AFF" />
+            <Rectangle translation="[10,10]" width="4"   height="44" color="0x00FFFFFF" />
+            <Label translation="[24, 20]" text="~ SIMILAR STREAMS" color="0x00FFFFFF" />
+            <Label id="overlayCloseHint" translation="[680, 20]" text="[Back] to close" color="0x5050A0FF" />
+
+            <Rectangle translation="[10, 62]" width="860" height="60" color="0x0E0E22FF" />
+            <Rectangle translation="[10, 62]" width="4"   height="60" color="0xFF00FFFF" />
+            <Label id="stream1title" translation="[24, 70]"  width="600" color="0xE0E0FFFF" text="Loading..." />
+            <Label id="stream1sub"   translation="[24, 92]"  width="600" color="0x6060A0FF" text="" />
+            <Label id="stream1badge" translation="[750, 75]" width="110" color="0x00FFCCFF" text="LIVE" />
+
+            <Rectangle translation="[10,130]" width="860" height="60" color="0x0E0E22FF" />
+            <Rectangle translation="[10,130]" width="4"   height="60" color="0xFF00FFFF" />
+            <Label id="stream2title" translation="[24,138]"  width="600" color="0xE0E0FFFF" text="Loading..." />
+            <Label id="stream2sub"   translation="[24,160]"  width="600" color="0x6060A0FF" text="" />
+            <Label id="stream2badge" translation="[750,143]" width="110" color="0xFFCC00FF" text="VOD" />
+
+            <Rectangle translation="[10,198]" width="860" height="60" color="0x0E0E22FF" />
+            <Rectangle translation="[10,198]" width="4"   height="60" color="0xFF00FFFF" />
+            <Label id="stream3title" translation="[24,206]"  width="600" color="0xE0E0FFFF" text="Loading..." />
+            <Label id="stream3sub"   translation="[24,228]"  width="600" color="0x6060A0FF" text="" />
+            <Label id="stream3badge" translation="[750,211]" width="110" color="0x00FFCCFF" text="LIVE" />
+
+            <Rectangle translation="[10,266]" width="860" height="60" color="0x0E0E22FF" />
+            <Rectangle translation="[10,266]" width="4"   height="60" color="0xFFCC00FF" />
+            <Label id="stream4title" translation="[24,274]"  width="600" color="0xE0E0FFFF" text="Loading..." />
+            <Label id="stream4sub"   translation="[24,296]"  width="600" color="0x6060A0FF" text="" />
+            <Label id="stream4badge" translation="[750,279]" width="110" color="0xFF00FFFF" text="NEW" />
+
+            <Rectangle translation="[10,334]" width="860" height="60" color="0x0E0E22FF" />
+            <Rectangle translation="[10,334]" width="4"   height="60" color="0xFFCC00FF" />
+            <Label id="stream5title" translation="[24,342]"  width="600" color="0xE0E0FFFF" text="Loading..." />
+            <Label id="stream5sub"   translation="[24,364]"  width="600" color="0x6060A0FF" text="" />
+            <Label id="stream5badge" translation="[750,347]" width="110" color="0xFFCC00FF" text="VOD" />
+
+            <Rectangle translation="[10,402]" width="860" height="1"  color="0x00FFFF33" />
+            <Label id="overlayStatus" translation="[24, 414]" width="840" height="28"
+                text="Scanning related content streams..." color="0x00FFCCFF" />
+        </Group>
+
+    </children>
+</component>

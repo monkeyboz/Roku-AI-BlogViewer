@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ActionButtonsPanel" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            print "ActionButtonsPanel: init()"
+            m.list = m.top.findNode("buttonList")
+            setupButtons()
+            m.list.observeField("itemSelected", "onButtonSelected")
+            m.list.setFocus(true)
+        end sub
+
+        sub setupButtons()
+            rootNode = CreateObject("roSGNode", "ContentNode")
+            labels = [
+                "> AI Narrate",
+                "~ Similar Streams",
+                "# Compile Mobile",
+                "@ Cross-Reference",
+                "+ Zoom Video",
+                "@ Enter URL"
+            ]
+            i = 0
+            while i < labels.count()
+                child = CreateObject("roSGNode", "ContentNode")
+                child.title = labels[i]
+                rootNode.appendChild(child)
+                i = i + 1
+            end while
+
+            m.list.itemComponentName = "ActionButton"
+            m.list.itemSize          = [295, 70]
+            m.list.itemSpacing       = [0, 6]
+            m.list.numRows           = 6
+            m.list.content           = rootNode
+        end sub
+
+        sub onButtonSelected(event as Object)
+            idx = event.getData()
+            actions = ["AI Narrate", "Show Similar Streams", "Compile for Mobile", "Cross-Reference", "Zoom Video", "Enter URL"]
+            if idx >= 0 and idx < actions.count()
+                print "ActionButtonsPanel: selected=" + actions[idx]
+                m.top.selectedAction = actions[idx]
+            end if
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="selectedAction" type="string" value="" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <Rectangle width="302" height="605" color="0x0E0E22FF" />
+        <Rectangle translation="[299,0]" width="3" height="605" color="0xFF00FFFF" />
+        <Rectangle translation="[0,0]"   width="302" height="30" color="0x1A0030FF" />
+        <Label translation="[12, 6]"
+            text="ACTIONS"
+            color="0xFF00FFFF" />
+        <MarkupList id="buttonList"
+            translation="[4, 34]" />
+    </children>
+</component>

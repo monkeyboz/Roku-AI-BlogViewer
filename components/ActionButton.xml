@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    ActionButton.xml
+    Item component used by ActionButtonsPanel MarkupList.
+    Neon glowing button with focus state animation.
+    Width: 295px | Height: 70px
+-->
+<component name="ActionButton" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.bg      = m.top.findNode("btnBg")
+            m.border  = m.top.findNode("btnBorder")
+            m.label   = m.top.findNode("btnLabel")
+            m.glow    = m.top.findNode("btnGlow")
+        end sub
+
+        sub onItemContentChange()
+            content = m.top.itemContent
+            if type(content) = "roInvalid" then return
+            m.label.text = content.title
+        end sub
+
+        sub onFocusPercentChange()
+            fp = m.top.focusPercent
+            if fp > 0.5
+                ' Focused: bright neon glow
+                m.bg.color     = "0x1A0050FF"
+                m.border.color = "0xFF00FFFF"
+                m.label.color  = "0xFFFFFFFF"
+                m.glow.visible = true
+                m.glow.opacity = 0.3 + (fp * 0.4)
+            else
+                ' Unfocused: dark muted
+                m.bg.color     = "0x0E0E22FF"
+                m.border.color = "0x3A3A6AFF"
+                m.label.color  = "0x9090B0FF"
+                m.glow.visible = false
+            end if
+        end sub
+        ]]>
+    </script>
+
+    <interface>
+        <field id="itemContent"  type="node"  onChange="onItemContentChange"  />
+        <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
+    </interface>
+
+    <children>
+        <!-- Glow halo (visible when focused) -->
+        <Rectangle id="btnGlow"
+            translation="[-4, -4]"
+            width="303" height="78"
+            color="0xFF00FFFF"
+            opacity="0.3"
+            visible="false" />
+
+        <!-- Button background -->
+        <Rectangle id="btnBg"
+            width="295" height="68"
+            color="0x0E0E22FF" />
+
+        <!-- Button border -->
+        <Rectangle id="btnBorder"
+            translation="[1,1]"
+            width="293" height="66"
+            color="0x3A3A6AFF"
+            opacity="0.0" />
+
+        <!-- Left accent bar -->
+        <Rectangle translation="[0, 8]"
+            width="4" height="52"
+            color="0xFF00FFFF" />
+
+        <!-- Button label -->
+        <Label id="btnLabel"
+            translation="[16, 20]"
+            width="272" height="30"
+            text="Action"
+            color="0x9090B0FF"
+            vertAlign="center" />
+    </children>
+</component>

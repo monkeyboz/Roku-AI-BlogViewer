@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    BottomNavBar.xml
+    Persistent horizontal nav bar. Left/Right moves between tabs.
+    OK fires selectedTab. Scene listens and opens the matching drawer.
+    Width: 1280 Height: 50  Position: [0, 620]
+-->
+<component name="BottomNavBar" extends="Group">
+    <script type="text/brightscript">
+        <![CDATA[
+        sub init()
+            m.tabs = [
+                m.top.findNode("tab0"),
+                m.top.findNode("tab1"),
+                m.top.findNode("tab2"),
+                m.top.findNode("tab3")
+            ]
+            m.labels = [
+                m.top.findNode("lbl0"),
+                m.top.findNode("lbl1"),
+                m.top.findNode("lbl2"),
+                m.top.findNode("lbl3")
+            ]
+            m.accents = [
+                m.top.findNode("acc0"),
+                m.top.findNode("acc1"),
+                m.top.findNode("acc2"),
+                m.top.findNode("acc3")
+            ]
+            m.tabIds = ["sections", "actions", "pageview", "url"]
+            m.curIdx = 1
+            btvHighlight(m.curIdx)
+        end sub
+
+        sub btvHighlight(idx as Integer)
+            i = 0
+            while i < m.tabs.count()
+                if i = idx
+                    m.tabs[i].color    = "0x1A004FFF"
+                    m.labels[i].color  = "0xFFFFFFFF"
+                    m.accents[i].color = "0xFF00FFFF"
+                else
+                    m.tabs[i].color    = "0x080818FF"
+                    m.labels[i].color  = "0x5050A0FF"
+                    m.accents[i].color = "0x00000000"
+                end if
+                i = i + 1
+            end while
+        end sub
+
+        function onKeyEvent(key as String, press as Boolean) as Boolean
+            if press = false then return false
+
+            if key = "left"
+                m.curIdx = m.curIdx - 1
+                if m.curIdx < 0 then m.curIdx = m.tabs.count() - 1
+                btvHighlight(m.curIdx)
+                m.top.focusedTab = m.tabIds[m.curIdx]
+                return true
+            else if key = "right"
+                m.curIdx = m.curIdx + 1
+                if m.curIdx >= m.tabs.count() then m.curIdx = 0
+                btvHighlight(m.curIdx)
+                m.top.focusedTab = m.tabIds[m.curIdx]
+                return true
+            else if key = "OK" or key = "play"
+                m.top.selectedTab = m.tabIds[m.curIdx]
+                return true
+            end if
+            return false
+        end function
+        ]]>
+    </script>
+
+    <interface>
+        <field id="focusedTab"  type="string" value="" alwaysNotify="true" />
+        <field id="selectedTab" type="string" value="" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Bar background -->
+        <Rectangle width="1280" height="50" color="0x060614FF" />
+        <Rectangle width="1280" height="1"  color="0xFF00FF44" />
+
+        <!-- Tab 0: SECTIONS  [0..319] -->
+        <Rectangle id="tab0" translation="[0,1]"   width="320" height="49" color="0x080818FF" />
+        <Rectangle id="acc0" translation="[0,1]"   width="320" height="3"  color="0x00000000" />
+        <Label     id="lbl0" translation="[0,14]"  width="320" height="22"
+            text="SECTIONS" color="0x5050A0FF" horizAlign="center" />
+
+        <!-- Tab 1: ACTIONS  [320..639] -->
+        <Rectangle id="tab1" translation="[320,1]" width="320" height="49" color="0x1A004FFF" />
+        <Rectangle id="acc1" translation="[320,1]" width="320" height="3"  color="0xFF00FFFF" />
+        <Label     id="lbl1" translation="[320,14]" width="320" height="22"
+            text="ACTIONS" color="0xFFFFFFFF" horizAlign="center" />
+
+        <!-- Tab 2: PAGE VIEW  [640..959] -->
+        <Rectangle id="tab2" translation="[640,1]" width="320" height="49" color="0x080818FF" />
+        <Rectangle id="acc2" translation="[640,1]" width="320" height="3"  color="0x00000000" />
+        <Label     id="lbl2" translation="[640,14]" width="320" height="22"
+            text="PAGE VIEW" color="0x5050A0FF" horizAlign="center" />
+
+        <!-- Tab 3: URL  [960..1279] -->
+        <Rectangle id="tab3" translation="[960,1]" width="320" height="49" color="0x080818FF" />
+        <Rectangle id="acc3" translation="[960,1]" width="320" height="3"  color="0x00000000" />
+        <Label     id="lbl3" translation="[960,14]" width="320" height="22"
+            text="ENTER URL" color="0x5050A0FF" horizAlign="center" />
+
+    </children>
+</component>

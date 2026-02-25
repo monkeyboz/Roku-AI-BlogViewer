@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TranscriptMatchTask" extends="Task">
+    <script type="text/brightscript" uri="pkg:/components/TranscriptMatchTask.brs" />
+    <interface>
+        <field id="dataBaseUrl"     type="string" value="" />
+        <field id="articleKeywords" type="string" value="" />
+        <field id="matchedClips"    type="string" value="" alwaysNotify="true" />
+        <field id="taskProgress"    type="string" value="" alwaysNotify="true" />
+        <field id="taskState"       type="string" value="idle" alwaysNotify="true" />
+    </interface>
+</component>

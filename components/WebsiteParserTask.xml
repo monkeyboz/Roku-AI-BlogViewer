@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    WebsiteParserTask.xml
+    Task node: fetches a URL over HTTP and does lightweight HTML parsing
+    to extract: page title, h1/h2 headings, and paragraph text.
+    Runs asynchronously - scene observes `parsedContent`.
+
+    Interface:
+      targetUrl     (string, in)  - URL to fetch
+      parsedContent (assocarray, out) - { title, url, sections[] }
+      taskState     (string, out) - "running" | "done" | "failed"
+-->
+<component name="WebsiteParserTask" extends="Task">
+    <script type="text/brightscript" uri="pkg:/components/WebsiteParserTask.brs" />
+
+    <interface>
+        <field id="targetUrl"     type="string" value=""     />
+        <field id="parsedContent" type="string" value=""     alwaysNotify="true" />
+        <field id="taskState"     type="string" value="idle" alwaysNotify="true" />
+    </interface>
+</component>
