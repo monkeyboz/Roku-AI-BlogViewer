@@ -58,26 +58,34 @@ sub init()
     m.narrateTimer.duration = 8
     m.narrateTimer.repeat   = true
 
-    ' Observers
-    m.parserTask.observeField("parsedContent",    "onContentParsed")
-    m.parserTask.observeField("taskState",        "onTaskStateChanged")
-    m.channelTask.observeField("matchedChannels", "onChannelsMatched")
-    m.channelTask.observeField("taskState",       "onChannelTaskState")
-    m.channelTask.observeField("taskProgress",    "onChannelProgress")
-    m.channelTask.observeField("taskError",       "onChannelError")
-    m.channelTask.observeField("urlHistory",      "onUrlHistoryLoaded")
-    m.transcriptTask.observeField("matchedClips", "onClipsMatched")
-    m.transcriptTask.observeField("taskState",    "onTranscriptTaskState")
-    m.transcriptTask.observeField("taskProgress", "onTranscriptProgress")
-    m.navBar.observeField("selectedTab",          "onTabSelected")
-    m.actionPanel.observeField("selectedAction",  "onActionSelected")
-    m.sectionsGrid.observeField("selectedSection","onSectionSelected")
-    m.sectionsGrid.observeField("focusedSection", "onSectionFocused")
-    m.pipGroup.observeField("selectedSection",    "onPipSectionSelected")
-    m.demoTimer.observeField("fire",              "onTimerFire")
-    m.narrateTimer.observeField("fire",           "onNarrateAdvance")
-    m.urlDialog.observeField("selectedUrl",       "onUrlDialogDone")
-    m.urlDialog.observeField("cancelled",         "onUrlDialogCancelled")
+    ' Observers - Parser Task
+m.parserTask.observeField("parsedContent",    "onContentParsed")
+m.parserTask.observeField("taskState",        "onTaskStateChanged")
+
+' Observers - Channel Match Task
+m.channelTask.observeField("matchedChannels", "onChannelsMatched")
+m.channelTask.observeField("taskState",       "onChannelTaskState")
+m.channelTask.observeField("taskProgress",    "onChannelProgress")
+m.channelTask.observeField("taskError",       "onChannelError")
+m.channelTask.observeField("urlHistory",      "onUrlHistoryLoaded")
+
+' Observers - Transcript Match Task
+m.transcriptTask.observeField("matchedClips", "onClipsMatched")
+m.transcriptTask.observeField("taskState",    "onTranscriptTaskState")
+m.transcriptTask.observeField("taskProgress", "onTranscriptProgress")
+
+' UI Observers
+m.navBar.observeField("selectedTab",          "onTabSelected")
+m.actionPanel.observeField("selectedAction",  "onActionSelected")
+m.sectionsGrid.observeField("selectedSection","onSectionSelected")
+m.sectionsGrid.observeField("focusedSection", "onSectionFocused")
+m.pipGroup.observeField("selectedSection",    "onPipSectionSelected")
+
+' Timers & Dialog
+m.demoTimer.observeField("fire",              "onTimerFire")
+m.narrateTimer.observeField("fire",           "onNarrateAdvance")
+m.urlDialog.observeField("selectedUrl",       "onUrlDialogDone")
+m.urlDialog.observeField("cancelled",         "onUrlDialogCancelled")
 
     m.headerGroup.statusText = "Initialising BlogTV..."
     startFetch(m.sampleUrl)
